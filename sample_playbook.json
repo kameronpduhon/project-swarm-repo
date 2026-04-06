@@ -1,0 +1,119 @@
+{
+  "id": "01JRQ5EXAMPLE000000000001",
+  "name": "Main Playbook",
+  "status": "published",
+  "content": {
+    "company_info": {
+      "greeting": "Thank you for calling Bayou Comfort Heating and Air! How can I help you today?",
+      "after_hours_message": "Thanks for calling Bayou Comfort Heating and Air. Our office is currently closed. I can take down your information and have someone reach out to you first thing in the morning. If this is an emergency, like a gas leak or no heat with freezing temperatures, please let me know and I'll make sure it gets flagged as urgent.",
+      "closing": "Alright, I've got everything I need. Someone from our team will be reaching out to you shortly. Thank you for calling Bayou Comfort, have a great day!"
+    },
+    "services": {
+      "offered": [
+        "AC Repair",
+        "AC Installation",
+        "Heating Repair",
+        "Heating Installation",
+        "Maintenance Plans",
+        "Ductwork Repair",
+        "Indoor Air Quality",
+        "Thermostat Installation",
+        "Emergency Service"
+      ],
+      "not_offered": [
+        "Duct Cleaning",
+        "Insulation",
+        "Plumbing",
+        "Electrical"
+      ],
+      "service_areas": [
+        "Lafayette",
+        "Broussard",
+        "Youngsville",
+        "Scott",
+        "Carencro",
+        "Breaux Bridge",
+        "Cecilia",
+        "Rayne",
+        "Crowley",
+        "New Iberia"
+      ]
+    },
+    "faqs": [
+      {
+        "question": "Do you offer financing?",
+        "answer": "Yes, we offer financing through GreenSky with approved credit. Our technician can go over the options with you on-site."
+      },
+      {
+        "question": "How much does a service call cost?",
+        "answer": "We charge a $79 diagnostic fee. If you decide to move forward with the repair, that fee gets applied toward the cost of the work."
+      },
+      {
+        "question": "Do you offer maintenance plans?",
+        "answer": "Yes, we have annual maintenance plans that include two tune-ups a year, one for your AC and one for your heating system. Members also get priority scheduling and a discount on repairs."
+      },
+      {
+        "question": "What brands do you work on?",
+        "answer": "We service all major brands including Carrier, Trane, Lennox, Rheem, Goodman, and York. For installations, we primarily install Carrier systems."
+      },
+      {
+        "question": "How soon can someone come out?",
+        "answer": "It depends on our schedule, but we typically can get someone out within 24 to 48 hours. If it's an emergency, we do offer same-day service when available."
+      },
+      {
+        "question": "Do you offer free estimates?",
+        "answer": "We offer free estimates on system replacements and new installations. Repair diagnostics have the $79 service fee."
+      }
+    ],
+    "field_collection": [
+      {
+        "name": "caller_name",
+        "label": "Caller's name",
+        "required": true
+      },
+      {
+        "name": "caller_phone",
+        "label": "Phone number",
+        "required": true
+      },
+      {
+        "name": "address",
+        "label": "Service address",
+        "required": true
+      },
+      {
+        "name": "issue_description",
+        "label": "Description of the issue",
+        "required": true
+      },
+      {
+        "name": "preferred_timeframe",
+        "label": "Preferred timeframe for service",
+        "required": false
+      }
+    ],
+    "booking": {
+      "method": "dispatch_notification",
+      "capacity_notes": "Typically 2-3 day lead time for non-emergency. Same-day available for emergencies when techs are open.",
+      "scheduling_rules": "Emergency calls get priority. Maintenance plan members get next-available slot before non-members."
+    },
+    "expectations": {
+      "arrival_window": "2-hour window",
+      "confirmation_method": "phone call",
+      "cancellation_policy": "Please give us at least 24 hours notice if you need to reschedule."
+    },
+    "guardrails": [
+      "Never quote exact pricing for repairs — only mention the $79 diagnostic fee",
+      "Never guarantee same-day service — say 'when available' or 'depending on our schedule'",
+      "Never diagnose the issue over the phone — only collect information about symptoms",
+      "Never make promises about warranty coverage — let the technician assess on-site",
+      "Never give legal or safety advice — if the caller mentions a gas leak, tell them to leave the house and call 911 first"
+    ],
+    "service_questions": [],
+    "objection_handling": []
+  },
+  "call_context": {
+    "organization_name": "Bayou Comfort Heating and Air",
+    "current_window": "business_hours"
+  }
+}
