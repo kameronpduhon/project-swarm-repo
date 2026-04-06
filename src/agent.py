@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 
@@ -11,6 +12,7 @@ from livekit.agents import (
     RunContext,
     cli,
     function_tool,
+    get_job_context,
     room_io,
 )
 from livekit.plugins import google, noise_cancellation
@@ -71,7 +73,31 @@ class VoiceAgent(Agent):
 
         log_call_results(results)
 
-        return "Call ended successfully. Results logged."
+        # --- Shutdown sequence (modeled on EndCallTool, using session.say()
+        # for reliable goodbye per livekit/agents#5096) ---
+
+        @context.session.once("close")
+        def _on_session_close(ev):
+            job_ctx = get_job_context()
+
+            async def _delete_room():
+                logger.info("Deleting room to disconnect SIP caller")
+                await job_ctx.delete_room()
+
+            job_ctx.add_shutdown_callback(_delete_room)
+            job_ctx.shutdown(reason="end_call")
+
+        async def _goodbye_then_shutdown():
+            speech = context.session.say("Thank you for calling. Have a great day!")
+            await speech
+            context.session.shutdown()
+
+        def _on_speech_done(_):
+            asyncio.create_task(_goodbye_then_shutdown())
+
+        context.speech_handle.add_done_callback(_on_speech_done)
+
+        return None
 
 
 server = AgentServer()
