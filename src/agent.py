@@ -73,8 +73,10 @@ class VoiceAgent(Agent):
 
         log_call_results(results)
 
-        # --- Shutdown sequence (modeled on EndCallTool, using session.say()
-        # for reliable goodbye per livekit/agents#5096) ---
+        # --- Shutdown sequence ---
+        # Gemini already spoke the closing via prompt instructions before calling
+        # this tool. We wait for that speech to finish, then tear down.
+        # NOTE: session.say() does NOT work with Gemini native audio (no TTS).
 
         @context.session.once("close")
         def _on_session_close(ev):
@@ -87,17 +89,14 @@ class VoiceAgent(Agent):
             job_ctx.add_shutdown_callback(_delete_room)
             job_ctx.shutdown(reason="end_call")
 
-        async def _goodbye_then_shutdown():
-            speech = context.session.say("Thank you for calling. Have a great day!")
-            await speech
+        async def _shutdown_after_playout():
+            await context.wait_for_playout()
+            logger.info("Playout complete, shutting down session")
             context.session.shutdown()
 
-        def _on_speech_done(_):
-            asyncio.create_task(_goodbye_then_shutdown())
+        asyncio.create_task(_shutdown_after_playout())
 
-        context.speech_handle.add_done_callback(_on_speech_done)
-
-        return None
+        return "Call ended. Do not say anything else."
 
 
 server = AgentServer()
