@@ -37,7 +37,7 @@ src/
 ## Key Files
 
 ### `agent.py`
-Entry point. `AgentServer` with `@server.rtc_session` handler. On session start: loads playbook, builds prompt, creates `AgentSession` with Gemini RealtimeModel (voice="Puck"), starts session with BVCTelephony noise cancellation for SIP participants. The `end_call` function tool is defined here as a method on `VoiceAgent` — it parses the structured results and passes them to `call_results.py`.
+Entry point. `AgentServer` with `@server.rtc_session` handler. On session start: loads playbook, builds prompt, creates `AgentSession` with Gemini RealtimeModel (voice="Puck"), starts session with BVCTelephony noise cancellation for SIP participants. The `end_call` function tool is defined here as a method on `VoiceAgent` — it validates and logs structured results via `call_results.py`. Valid intent values: `schedule_service`, `request_quote`, `general_inquiry`, `faq`, `message`, `emergency`. Valid urgency values: `normal`, `urgent`, `emergency` (see `DATA-CONTRACTS.md §2`).
 
 ### `playbook.py`
 Loads `sample_playbook.json` from the repo root. Returns `(content, call_context)` tuple. **To swap to real API later:** replace the file load with a GET request to `GET /api/v1/organizations/{org}/playbooks/{playbook}` — the return shape is identical.
@@ -46,7 +46,7 @@ Loads `sample_playbook.json` from the repo root. Returns `(content, call_context
 Converts playbook JSON + call_context into a Gemini-optimized system instruction string. Sections: PERSONA, CONVERSATIONAL RULES (greeting → caller ID → intent loop → closing → end_call), SERVICES, BOOKING INFO, EXPECTATIONS, FAQs, TOOL INVOCATION, GUARDRAILS. Handles business_hours vs after_hours greeting selection.
 
 ### `call_results.py`
-Logs structured call results to console. **To swap to real API later:** replace the logger call with a POST to `POST /api/v1/organizations/{org}/calls` — the payload shape matches `DATA-CONTRACTS.md §2`.
+Logs structured call results with PII redaction. Info-level logs show only intent and urgency (safe metadata). Full payload (including caller name, phone, summary, collected fields) is logged at debug level only. **To swap to real API later:** replace the logger call with a POST to `POST /api/v1/organizations/{org}/calls` — the payload shape matches `DATA-CONTRACTS.md §2`.
 
 ### `sample_playbook.json`
 Fictional "Bayou Comfort Heating and Air" playbook. Matches the exact schema from `DATA-CONTRACTS.md §1`. Used as a stand-in until project-d serves the real API.
@@ -62,12 +62,10 @@ These issues were found during test calls and fixed in `prompt_builder.py`:
 3. **Field name keys match playbook** — Agent was returning `service_address` instead of `address`. Field list now shows exact machine keys from playbook; tool invocation instructions enforce using them.
 
 ### Known issues to fix:
-1. **Session doesn't auto-disconnect after end_call** — After Gemini calls end_call and results are logged, the LiveKit session stays open. Caller sits in silence until they hang up. Attempted `session.close()` and `room.disconnect()` via asyncio.create_task — neither worked with Gemini's RealtimeModel. Needs deeper investigation into how to properly tear down a Gemini realtime session in LiveKit. This WILL be a problem for real SIP calls where the caller expects the line to drop.
-2. **Caller name transcription accuracy** — Gemini occasionally mishears names (e.g. "Thibodaux" → "Tibbetts"). Not blocking for MVP. Could add spelling confirmation to prompt later.
+1. **Caller name transcription accuracy** — Gemini occasionally mishears names (e.g. "Thibodaux" → "Tibbetts"). Not blocking for MVP. Could add spelling confirmation to prompt later.
 
 ### What to work on next:
-1. **Fix auto-disconnect** — research LiveKit + Gemini session teardown. Check LiveKit Discord, GitHub issues, or examples for how other agents end calls after a tool fires
-2. **Run remaining test scripts** — see `test-call-scripts.md` in parent project-swarm folder. Still need to test: FAQ only, emergency, after-hours, out-of-area, guardrail pressure, multi-intent
+1. **Run remaining test scripts** — see `test-call-scripts.md` in parent project-swarm folder. Still need to test: FAQ only, emergency, after-hours, out-of-area, guardrail pressure, multi-intent
 3. **Continue prompt tuning** based on test results
 4. **Error handling** — playbook fetch failures, caller hang-ups before end_call, Gemini API errors, end_call timeout fallback
 5. **Twilio SIP integration** — test with real phone calls through Twilio → LiveKit

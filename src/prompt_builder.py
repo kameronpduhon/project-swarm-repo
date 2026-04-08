@@ -25,7 +25,7 @@ def build_prompt(content: dict, call_context: dict) -> str:
     faqs = content.get("faqs", [])
     faq_lines = []
     for faq in faqs:
-        faq_lines.append(f'  Q: {faq["question"]}\n  A: {faq["answer"]}')
+        faq_lines.append(f"  Q: {faq['question']}\n  A: {faq['answer']}")
     faqs_str = "\n\n".join(faq_lines)
 
     guardrails = content.get("guardrails", [])

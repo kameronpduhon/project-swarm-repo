@@ -1,6 +1,6 @@
 import asyncio
-import json
 import logging
+from typing import Literal
 
 from dotenv import load_dotenv
 from livekit import rtc
@@ -25,10 +25,65 @@ logger = logging.getLogger("voice-agent")
 
 load_dotenv(".env.local")
 
+VALID_INTENTS = Literal[
+    "schedule_service",
+    "request_quote",
+    "general_inquiry",
+    "faq",
+    "message",
+    "emergency",
+]
+
+VALID_URGENCY = Literal["normal", "urgent", "emergency"]
+
+_VALID_INTENTS = {
+    "schedule_service",
+    "request_quote",
+    "general_inquiry",
+    "faq",
+    "message",
+    "emergency",
+}
+_VALID_URGENCY = {"normal", "urgent", "emergency"}
+
+
+def normalize_end_call_payload(
+    intent: str, urgency: str, collected_fields: object
+) -> tuple[str, str, dict]:
+    """Normalize and validate end_call inputs, returning safe values.
+
+    Invalid intent defaults to 'general_inquiry'.
+    Invalid urgency defaults to 'normal'.
+    Non-dict collected_fields becomes empty dict.
+    """
+    if intent not in _VALID_INTENTS:
+        logger.warning(
+            "end_call received invalid intent '%s', defaulting to 'general_inquiry'",
+            intent,
+        )
+        intent = "general_inquiry"
+
+    if urgency not in _VALID_URGENCY:
+        logger.warning(
+            "end_call received invalid urgency '%s', defaulting to 'normal'",
+            urgency,
+        )
+        urgency = "normal"
+
+    if not isinstance(collected_fields, dict):
+        logger.warning(
+            "end_call received non-dict collected_fields: %s",
+            type(collected_fields),
+        )
+        collected_fields = {}
+
+    return intent, urgency, collected_fields
+
 
 class VoiceAgent(Agent):
     def __init__(self, instructions: str) -> None:
         super().__init__(instructions=instructions)
+        self._shutdown_task: asyncio.Task | None = None
 
     @function_tool()
     async def end_call(
@@ -36,10 +91,10 @@ class VoiceAgent(Agent):
         context: RunContext,
         caller_name: str,
         caller_phone: str,
-        intent: str,
+        intent: VALID_INTENTS,
         summary: str,
-        urgency: str,
-        collected_fields: str,
+        urgency: VALID_URGENCY,
+        collected_fields: dict,
     ):
         """End the call and log the results. Call this when the conversation is
         complete and the caller is ready to hang up.
@@ -47,20 +102,14 @@ class VoiceAgent(Agent):
         Args:
             caller_name: The caller's name, if provided.
             caller_phone: The caller's phone number, if provided.
-            intent: The caller's intent. One of: schedule_service, request_quote, general_inquiry, faq, message, emergency.
+            intent: The caller's intent.
             summary: A brief summary of the conversation.
-            urgency: The urgency level. One of: normal, urgent, emergency.
-            collected_fields: JSON string of key-value pairs of information collected during the call.
+            urgency: The urgency level.
+            collected_fields: Key-value pairs of information collected during the call.
         """
-        if isinstance(collected_fields, str):
-            try:
-                fields = json.loads(collected_fields)
-            except json.JSONDecodeError:
-                fields = {"raw": collected_fields}
-        elif isinstance(collected_fields, dict):
-            fields = collected_fields
-        else:
-            fields = {}
+        intent, urgency, collected_fields = normalize_end_call_payload(
+            intent, urgency, collected_fields
+        )
 
         results = {
             "caller_name": caller_name,
@@ -68,7 +117,7 @@ class VoiceAgent(Agent):
             "intent": intent,
             "summary": summary,
             "urgency": urgency,
-            "collected_fields": fields,
+            "collected_fields": collected_fields,
         }
 
         log_call_results(results)
@@ -80,6 +129,10 @@ class VoiceAgent(Agent):
 
         @context.session.once("close")
         def _on_session_close(ev):
+            # Cancel pending shutdown task if session closes first (e.g. caller hangs up)
+            if self._shutdown_task and not self._shutdown_task.done():
+                self._shutdown_task.cancel()
+
             job_ctx = get_job_context()
 
             async def _delete_room():
@@ -90,11 +143,17 @@ class VoiceAgent(Agent):
             job_ctx.shutdown(reason="end_call")
 
         async def _shutdown_after_playout():
-            await context.wait_for_playout()
-            logger.info("Playout complete, shutting down session")
-            context.session.shutdown()
+            try:
+                await context.wait_for_playout()
+                logger.info("Playout complete, shutting down session")
+            except Exception:
+                logger.warning(
+                    "Playout wait failed, shutting down session anyway", exc_info=True
+                )
+            finally:
+                context.session.shutdown()
 
-        asyncio.create_task(_shutdown_after_playout())
+        self._shutdown_task = asyncio.create_task(_shutdown_after_playout())
 
         return "Call ended. Do not say anything else."
 
