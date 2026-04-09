@@ -96,16 +96,17 @@ class VoiceAgent(Agent):
         urgency: VALID_URGENCY,
         collected_fields: dict,
     ):
-        """End the call and log the results. Call this when the conversation is
-        complete and the caller is ready to hang up.
+        """End the call and log the results. Call this IMMEDIATELY after your
+        closing statement. Do not say anything else after calling this tool.
 
         Args:
-            caller_name: The caller's name, if provided.
-            caller_phone: The caller's phone number, if provided.
-            intent: The caller's intent.
-            summary: A brief summary of the conversation.
-            urgency: The urgency level.
-            collected_fields: Key-value pairs of information collected during the call.
+            caller_name: The caller's name ("unknown" if not collected).
+            caller_phone: The caller's phone number ("unknown" if not collected).
+            intent: The caller's primary intent.
+            summary: Brief summary of the ENTIRE conversation including all topics.
+            urgency: The urgency level of the call.
+            collected_fields: All information collected. Include keys like service,
+                sub_service, service_address, issue_description, is_homeowner, etc.
         """
         intent, urgency, collected_fields = normalize_end_call_payload(
             intent, urgency, collected_fields
@@ -165,10 +166,10 @@ server = AgentServer()
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
 
-    content, call_context = load_playbook()
-    instructions = build_prompt(content, call_context)
+    resolved = load_playbook()
+    instructions = build_prompt(resolved)
 
-    logger.info("Playbook loaded for %s", call_context["organization_name"])
+    logger.info("Playbook loaded for %s", resolved["playbook"]["name"])
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(

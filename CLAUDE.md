@@ -27,8 +27,8 @@ One `VoiceAgent` class (subclass of `Agent`) handles the full conversation. No m
 ```
 src/
 ├── agent.py          # Entry point — AgentServer, VoiceAgent class, end_call tool, session handler
-├── playbook.py       # Loads playbook from sample_playbook.json (swap to API later)
-├── prompt_builder.py # Converts playbook JSON + call_context → Gemini system instructions
+├── playbook.py       # Loads resolved playbook from sample_playbook.json (swap to API later)
+├── prompt_builder.py # Converts resolved playbook dict → Gemini system instructions
 └── call_results.py   # Logs call results locally (swap to POST later)
 ```
 
@@ -40,16 +40,16 @@ src/
 Entry point. `AgentServer` with `@server.rtc_session` handler. On session start: loads playbook, builds prompt, creates `AgentSession` with Gemini RealtimeModel (voice="Puck"), starts session with BVCTelephony noise cancellation for SIP participants. The `end_call` function tool is defined here as a method on `VoiceAgent` — it validates and logs structured results via `call_results.py`. Valid intent values: `schedule_service`, `request_quote`, `general_inquiry`, `faq`, `message`, `emergency`. Valid urgency values: `normal`, `urgent`, `emergency` (see `DATA-CONTRACTS.md §2`).
 
 ### `playbook.py`
-Loads `sample_playbook.json` from the repo root. Returns `(content, call_context)` tuple. **To swap to real API later:** replace the file load with a GET request to `GET /api/v1/organizations/{org}/playbooks/{playbook}` — the return shape is identical.
+Loads `sample_playbook.json` from the repo root. Returns the full resolved playbook dict with keys: `playbook`, `current_time_window`, `service_configs`, `non_services`, `non_service_areas`, `faqs`, `memberships`, `global_questions`. Validates required keys on load. **To swap to real API later:** replace the file load with a GET request to project-d's resolve endpoint — the return shape is identical.
 
 ### `prompt_builder.py`
-Converts playbook JSON + call_context into a Gemini-optimized system instruction string. Sections: PERSONA, CONVERSATIONAL RULES (greeting → caller ID → intent loop → closing → end_call), SERVICES, BOOKING INFO, EXPECTATIONS, FAQs, TOOL INVOCATION, GUARDRAILS. Handles business_hours vs after_hours greeting selection.
+Converts the resolved playbook dict into a Gemini-optimized system instruction string. Sections: PERSONA, CONVERSATION STYLE, CONVERSATIONAL RULES (greeting → service/area check → intake → probing questions → loop → closing → end_call), SERVICES OFFERED, SERVICES NOT OFFERED, SERVICE ZONES, NON-SERVICE AREAS, DISPATCH FEES, MEMBERSHIPS, PROBING QUESTIONS, FAQs, GUARDRAILS, CRITICAL — ENDING THE CALL. Uses helper functions to build each section dynamically from the resolved playbook data. Handles business hours vs after-hours greeting selection based on `current_time_window.name`.
 
 ### `call_results.py`
 Logs structured call results with PII redaction. Info-level logs show only intent and urgency (safe metadata). Full payload (including caller name, phone, summary, collected fields) is logged at debug level only. **To swap to real API later:** replace the logger call with a POST to `POST /api/v1/organizations/{org}/calls` — the payload shape matches `DATA-CONTRACTS.md §2`.
 
 ### `sample_playbook.json`
-Fictional "Bayou Comfort Heating and Air" playbook. Matches the exact schema from `DATA-CONTRACTS.md §1`. Used as a stand-in until project-d serves the real API.
+Fictional "ACE Home Services" multi-trade playbook (HVAC, Electrical, Plumbing, Drains). Uses the resolved playbook format — the output of project-d's `ResolvePlaybookAction`, which pre-resolves the active time window and filters service configs. Used as a stand-in until project-d serves the real resolve endpoint.
 
 ## Current Phase: Testing & Tuning
 
@@ -59,7 +59,7 @@ The foundation is built. First test calls have been completed. Prompt tuning is 
 These issues were found during test calls and fixed in `prompt_builder.py`:
 1. **One question at a time** — Agent was stacking 3-4 questions per response. Added CONVERSATION STYLE section and guardrail to enforce one question per turn.
 2. **Greet first, then listen** — Agent was immediately asking for name after greeting. Now waits for caller to state their need before collecting info.
-3. **Field name keys match playbook** — Agent was returning `service_address` instead of `address`. Field list now shows exact machine keys from playbook; tool invocation instructions enforce using them.
+3. **Field name keys match playbook** — Agent was returning wrong field keys. Intake fields are now dynamically built from `ai_settings.caller_intake` in the playbook; tool invocation instructions enforce using exact keys.
 
 ### Known issues to fix:
 1. **Caller name transcription accuracy** — Gemini occasionally mishears names (e.g. "Thibodaux" → "Tibbetts"). Not blocking for MVP. Could add spelling confirmation to prompt later.
@@ -78,9 +78,9 @@ These issues were found during test calls and fixed in `prompt_builder.py`:
 
 ### When to swap to real API:
 Once project-d has these built (waiting on Kyle's review):
-1. `call_context` added to playbook API response
+1. Resolve endpoint serving the resolved playbook format (playbook + service_configs + faqs + etc.)
 2. `POST /api/v1/organizations/{org}/calls` endpoint created
-Then update `playbook.py` (file load → GET request) and `call_results.py` (logger → POST request). The rest of the agent code stays the same.
+Then update `playbook.py` (file load → GET to resolve endpoint) and `call_results.py` (logger → POST request). The rest of the agent code stays the same — `prompt_builder.py` already consumes the resolved format.
 
 ## Gemini 3.1 Compatibility Notes
 
@@ -94,9 +94,8 @@ These LiveKit features do NOT work with Gemini 3.1 Flash Live Preview:
 ## Data Contracts
 
 See `DATA-CONTRACTS.md` in the parent `project-swarm/` folder for the full contracts between this agent and project-d:
-- §1: Playbook JSON schema (what `sample_playbook.json` follows)
+- §1: Resolved playbook schema (what `sample_playbook.json` follows — the output of `ResolvePlaybookAction`)
 - §2: Call results schema (what `end_call` produces)
-- §3: Call context schema (what `call_context` contains)
 
 ## Environment Variables
 

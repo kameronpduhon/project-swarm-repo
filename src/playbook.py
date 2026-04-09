@@ -4,8 +4,12 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def load_playbook(path: str | None = None) -> tuple[dict, dict]:
-    """Load playbook JSON, returning (content, call_context).
+def load_playbook(path: str | None = None) -> dict:
+    """Load resolved playbook JSON from file (dev) or API (future).
+
+    Returns the full resolved playbook dict with keys:
+        playbook, current_time_window, service_configs, non_services,
+        non_service_areas, faqs, memberships, global_questions
 
     Args:
         path: Explicit path to playbook file. If None, loads sample_playbook.json
@@ -20,4 +24,14 @@ def load_playbook(path: str | None = None) -> tuple[dict, dict]:
         )
 
     data = json.loads(resolved.read_text())
-    return data["content"], data["call_context"]
+
+    # Validate required top-level keys
+    required = {"playbook", "current_time_window", "service_configs", "faqs"}
+    missing = required - data.keys()
+    if missing:
+        raise ValueError(
+            f"Playbook JSON missing required keys: {missing}. "
+            "Expected resolved playbook format from project-d /resolve endpoint."
+        )
+
+    return data

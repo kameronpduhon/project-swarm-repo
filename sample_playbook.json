@@ -1,130 +1,333 @@
 {
-  "id": "01JRQ5EXAMPLE000000000001",
-  "name": "Main Playbook",
-  "status": "published",
-  "content": {
-    "company_info": {
-      "greeting": "Thank you for calling Bayou Comfort Heating and Air! How can I help you today?",
-      "after_hours_message": "Thanks for calling Bayou Comfort Heating and Air. Our office is currently closed. I can take down your information and have someone reach out to you first thing in the morning. If this is an emergency, like a gas leak or no heat with freezing temperatures, please let me know and I'll make sure it gets flagged as urgent.",
-      "closing": "Alright, I've got everything I need. Someone from our team will be reaching out to you shortly. Thank you for calling Bayou Comfort, have a great day!"
-    },
-    "services": {
-      "offered": [
-        "AC Repair",
-        "AC Installation",
-        "Heating Repair",
-        "Heating Installation",
-        "Maintenance Plans",
-        "Ductwork Repair",
-        "Indoor Air Quality",
-        "Thermostat Installation",
-        "Emergency Service"
-      ],
-      "not_offered": [
-        "Duct Cleaning",
-        "Insulation",
-        "Plumbing",
-        "Electrical"
-      ],
-      "service_areas": [
-        "Lafayette",
-        "Broussard",
-        "Youngsville",
-        "Scott",
-        "Carencro",
-        "Breaux Bridge",
-        "Cecilia",
-        "Rayne",
-        "Crowley",
-        "New Iberia",
-        "70501",
-        "70503",
-        "70506",
-        "70507",
-        "70508",
-        "70518",
-        "70592",
-        "70525",
-        "70517",
-        "70526",
-        "70560"
-      ]
-    },
-    "faqs": [
-      {
-        "question": "Do you offer financing?",
-        "answer": "Yes, we offer financing through GreenSky with approved credit. Our technician can go over the options with you on-site."
-      },
-      {
-        "question": "How much does a service call cost?",
-        "answer": "We charge a $79 diagnostic fee. If you decide to move forward with the repair, that fee gets applied toward the cost of the work."
-      },
-      {
-        "question": "Do you offer maintenance plans?",
-        "answer": "Yes, we have annual maintenance plans that include two tune-ups a year, one for your AC and one for your heating system. Members also get priority scheduling and a discount on repairs."
-      },
-      {
-        "question": "What brands do you work on?",
-        "answer": "We service all major brands including Carrier, Trane, Lennox, Rheem, Goodman, and York. For installations, we primarily install Carrier systems."
-      },
-      {
-        "question": "How soon can someone come out?",
-        "answer": "It depends on our schedule, but we typically can get someone out within 24 to 48 hours. If it's an emergency, we do offer same-day service when available."
-      },
-      {
-        "question": "Do you offer free estimates?",
-        "answer": "We offer free estimates on system replacements and new installations. Repair diagnostics have the $79 service fee."
+  "playbook": {
+    "id": "01JEXAMPLE00000000000ACE01",
+    "name": "ACE Home Services",
+    "timezone": "America/Chicago",
+    "greeting_script": "Thank you for calling ACE Home Services, the Greater New Orleans area's trusted home service experts. How can I help you today?",
+    "after_hours_message": "You've reached ACE Home Services after business hours. If this is an emergency such as a burst pipe, gas leak, or electrical hazard, please stay on the line and we'll connect you with our on-call technician. For non-emergency requests, we'll schedule you for the next available appointment during business hours.",
+    "customer_types": "both",
+    "ai_settings": {
+      "caller_intake": {
+        "collect_name": true,
+        "verify_name": true,
+        "collect_callback_number": true,
+        "verify_callback_number": true,
+        "collect_email": false,
+        "verify_email": false,
+        "collect_service_address": true,
+        "ask_residential_or_commercial": true,
+        "ask_responsible_for_billing": false,
+        "ask_if_homeowner": true,
+        "ask_business_name": true,
+        "ask_unit_apartment": false,
+        "verify_address_zone": true,
+        "verify_address_avs": false,
+        "verify_address_readback": true
       }
-    ],
-    "field_collection": [
-      {
-        "name": "caller_name",
-        "label": "Caller's name",
-        "required": true
-      },
-      {
-        "name": "caller_phone",
-        "label": "Phone number",
-        "required": true
-      },
-      {
-        "name": "address",
-        "label": "Service address",
-        "required": true
-      },
-      {
-        "name": "issue_description",
-        "label": "Description of the issue",
-        "required": true
-      },
-      {
-        "name": "preferred_timeframe",
-        "label": "Preferred timeframe for service",
-        "required": false
-      }
-    ],
-    "booking": {
-      "method": "dispatch_notification",
-      "capacity_notes": "Typically 2-3 day lead time for non-emergency. Same-day available for emergencies when techs are open.",
-      "scheduling_rules": "Emergency calls get priority. Maintenance plan members get next-available slot before non-members."
-    },
-    "expectations": {
-      "arrival_window": "2-hour window",
-      "confirmation_method": "phone call",
-      "cancellation_policy": "Please give us at least 24 hours notice if you need to reschedule."
-    },
-    "guardrails": [
-      "Never quote exact pricing for repairs — only mention the $79 diagnostic fee",
-      "Never guarantee same-day service — say 'when available' or 'depending on our schedule'",
-      "Never diagnose the issue over the phone — only collect information about symptoms",
-      "Never make promises about warranty coverage — let the technician assess on-site",
-      "Never give legal or safety advice — if the caller mentions a gas leak, tell them to leave the house and call 911 first"
-    ],
-    "service_questions": [],
-    "objection_handling": []
+    }
   },
-  "call_context": {
-    "organization_name": "Bayou Comfort Heating and Air",
-    "current_window": "business_hours"
-  }
+  "current_time_window": {
+    "id": "01JEXAMPLE00000000000TW001",
+    "name": "Business Hours"
+  },
+  "service_configs": [
+    {
+      "id": "01JEXAMPLE00000000000SC001",
+      "label": null,
+      "service": "HVAC",
+      "sub_services": [
+        "AC Not Cooling",
+        "Heater Not Working",
+        "AC Leaking Water",
+        "Strange Noises from Unit",
+        "Thermostat Issues",
+        "AC Unit Frozen",
+        "Ductwork Problems",
+        "AC Maintenance / Tune-Up",
+        "New AC Installation",
+        "Air Quality Concerns"
+      ],
+      "customer_type": "both",
+      "zones": [
+        {"type": "zip", "value": "70112"},
+        {"type": "zip", "value": "70113"},
+        {"type": "zip", "value": "70114"},
+        {"type": "zip", "value": "70115"},
+        {"type": "zip", "value": "70116"},
+        {"type": "zip", "value": "70117"},
+        {"type": "zip", "value": "70118"},
+        {"type": "zip", "value": "70119"},
+        {"type": "zip", "value": "70121"},
+        {"type": "zip", "value": "70122"},
+        {"type": "zip", "value": "70123"},
+        {"type": "zip", "value": "70124"},
+        {"type": "zip", "value": "70125"},
+        {"type": "zip", "value": "70126"},
+        {"type": "zip", "value": "70127"},
+        {"type": "zip", "value": "70128"},
+        {"type": "zip", "value": "70129"},
+        {"type": "zip", "value": "70130"},
+        {"type": "zip", "value": "70131"}
+      ],
+      "zone_group_name": "New Orleans Metro",
+      "fee": {
+        "label": "Standard Dispatch Fee",
+        "amount": 89.0,
+        "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
+        "credited_toward_work": true
+      },
+      "membership_fees": [
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
+        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+      ],
+      "probing_questions": [
+        "When did you first notice the issue?",
+        "Is this an emergency or safety concern?",
+        "Have you tried anything to resolve it?",
+        "How old is your AC or heating unit?",
+        "Is your system gas or electric?",
+        "What brand is your unit?",
+        "When was your last maintenance or tune-up?"
+      ],
+      "dispatch_qualifications": [
+        "EPA 608 certification required",
+        "Must have refrigerant recovery equipment"
+      ],
+      "oncall_schedule": null
+    },
+    {
+      "id": "01JEXAMPLE00000000000SC002",
+      "label": null,
+      "service": "Electrical",
+      "sub_services": [
+        "No Power / Outage",
+        "Sparking Outlet",
+        "Burning Smell from Electrical",
+        "Breaker Keeps Tripping",
+        "Outlet Not Working",
+        "Light Fixture Issue",
+        "Ceiling Fan Installation",
+        "Panel Upgrade",
+        "Generator Installation",
+        "Electrical Inspection"
+      ],
+      "customer_type": "both",
+      "zones": [
+        {"type": "zip", "value": "70112"},
+        {"type": "zip", "value": "70113"},
+        {"type": "zip", "value": "70114"},
+        {"type": "zip", "value": "70115"},
+        {"type": "zip", "value": "70116"},
+        {"type": "zip", "value": "70117"},
+        {"type": "zip", "value": "70118"},
+        {"type": "zip", "value": "70119"},
+        {"type": "zip", "value": "70121"},
+        {"type": "zip", "value": "70122"},
+        {"type": "zip", "value": "70123"},
+        {"type": "zip", "value": "70124"},
+        {"type": "zip", "value": "70125"},
+        {"type": "zip", "value": "70126"},
+        {"type": "zip", "value": "70127"},
+        {"type": "zip", "value": "70128"},
+        {"type": "zip", "value": "70129"},
+        {"type": "zip", "value": "70130"},
+        {"type": "zip", "value": "70131"}
+      ],
+      "zone_group_name": "New Orleans Metro",
+      "fee": {
+        "label": "Standard Dispatch Fee",
+        "amount": 89.0,
+        "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
+        "credited_toward_work": true
+      },
+      "membership_fees": [
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
+        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+      ],
+      "probing_questions": [
+        "When did you first notice the issue?",
+        "Is this an emergency or safety concern?",
+        "Have you tried anything to resolve it?",
+        "Are there any exposed wires?",
+        "Is the issue in one room or the whole house?",
+        "How old is your electrical panel?"
+      ],
+      "dispatch_qualifications": [
+        "Licensed journeyman or master electrician required",
+        "Must carry voltage testing equipment",
+        "Arc flash PPE required for panel work"
+      ],
+      "oncall_schedule": null
+    },
+    {
+      "id": "01JEXAMPLE00000000000SC003",
+      "label": null,
+      "service": "Plumbing",
+      "sub_services": [
+        "Burst Pipe",
+        "Sewer Backup",
+        "No Hot Water",
+        "Water Heater Leaking",
+        "Leaking Faucet",
+        "Running Toilet",
+        "Low Water Pressure",
+        "Garbage Disposal Issue",
+        "Water Heater Installation",
+        "Repiping"
+      ],
+      "customer_type": "both",
+      "zones": [
+        {"type": "zip", "value": "70112"},
+        {"type": "zip", "value": "70113"},
+        {"type": "zip", "value": "70114"},
+        {"type": "zip", "value": "70115"},
+        {"type": "zip", "value": "70116"},
+        {"type": "zip", "value": "70117"},
+        {"type": "zip", "value": "70118"},
+        {"type": "zip", "value": "70119"},
+        {"type": "zip", "value": "70121"},
+        {"type": "zip", "value": "70122"},
+        {"type": "zip", "value": "70123"},
+        {"type": "zip", "value": "70124"},
+        {"type": "zip", "value": "70125"},
+        {"type": "zip", "value": "70126"},
+        {"type": "zip", "value": "70127"},
+        {"type": "zip", "value": "70128"},
+        {"type": "zip", "value": "70129"},
+        {"type": "zip", "value": "70130"},
+        {"type": "zip", "value": "70131"}
+      ],
+      "zone_group_name": "New Orleans Metro",
+      "fee": {
+        "label": "Standard Dispatch Fee",
+        "amount": 89.0,
+        "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
+        "credited_toward_work": true
+      },
+      "membership_fees": [
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
+        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+      ],
+      "probing_questions": [
+        "When did you first notice the issue?",
+        "Is this an emergency or safety concern?",
+        "Have you tried anything to resolve it?",
+        "Where is the leak located?",
+        "Is there standing water?",
+        "Do you know where your main water shut-off valve is?"
+      ],
+      "dispatch_qualifications": [
+        "Licensed plumber required",
+        "Must have pipe locating equipment"
+      ],
+      "oncall_schedule": null
+    },
+    {
+      "id": "01JEXAMPLE00000000000SC004",
+      "label": null,
+      "service": "Drains",
+      "sub_services": [
+        "Main Line Backup",
+        "Drain Flooding",
+        "Slow Drain",
+        "Kitchen Drain Clogged",
+        "Bathroom Drain Clogged",
+        "Floor Drain Issue",
+        "Camera Inspection",
+        "Hydro Jetting"
+      ],
+      "customer_type": "both",
+      "zones": [
+        {"type": "zip", "value": "70112"},
+        {"type": "zip", "value": "70113"},
+        {"type": "zip", "value": "70114"},
+        {"type": "zip", "value": "70115"},
+        {"type": "zip", "value": "70116"},
+        {"type": "zip", "value": "70117"},
+        {"type": "zip", "value": "70118"},
+        {"type": "zip", "value": "70119"},
+        {"type": "zip", "value": "70121"},
+        {"type": "zip", "value": "70122"},
+        {"type": "zip", "value": "70123"},
+        {"type": "zip", "value": "70124"},
+        {"type": "zip", "value": "70125"},
+        {"type": "zip", "value": "70126"},
+        {"type": "zip", "value": "70127"},
+        {"type": "zip", "value": "70128"},
+        {"type": "zip", "value": "70129"},
+        {"type": "zip", "value": "70130"},
+        {"type": "zip", "value": "70131"}
+      ],
+      "zone_group_name": "New Orleans Metro",
+      "fee": {
+        "label": "Standard Dispatch Fee",
+        "amount": 89.0,
+        "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
+        "credited_toward_work": true
+      },
+      "membership_fees": [
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
+        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+      ],
+      "probing_questions": [
+        "When did you first notice the issue?",
+        "Is this an emergency or safety concern?",
+        "Have you tried anything to resolve it?",
+        "Which drain is affected?",
+        "Have you used any chemical drain cleaners?",
+        "How many drains are affected?"
+      ],
+      "dispatch_qualifications": [
+        "Must have drain camera equipment",
+        "Hydro jetting certification preferred"
+      ],
+      "oncall_schedule": null
+    }
+  ],
+  "non_services": [
+    "Roofing",
+    "Pest Control",
+    "Landscaping",
+    "Appliance Repair",
+    "Handyman Services"
+  ],
+  "non_service_areas": [
+    {
+      "type": "city",
+      "value": "Baton Rouge",
+      "response_script": "We currently only service the Greater New Orleans metropolitan area. We're unable to dispatch to Baton Rouge at this time."
+    },
+    {
+      "type": "city",
+      "value": "Lafayette",
+      "response_script": "We currently only service the Greater New Orleans metropolitan area. We're unable to dispatch to Lafayette at this time."
+    }
+  ],
+  "faqs": [
+    {"question": "What payment methods do you accept?", "answer": "We accept all major credit cards, debit cards, checks, and cash. We also offer financing options for larger projects."},
+    {"question": "Do you offer a warranty on your work?", "answer": "Yes, we offer a one-year warranty on all labor and honor all manufacturer warranties on parts and equipment we install."},
+    {"question": "Do you handle emergencies or after-hours calls?", "answer": "Absolutely. We have on-call technicians available 24/7 for emergencies like burst pipes, gas leaks, electrical hazards, and no AC during extreme heat."},
+    {"question": "What areas do you service?", "answer": "We service the entire Greater New Orleans metropolitan area including Metairie, Kenner, the Northshore communities of Mandeville, Covington, and Slidell, as well as the Westbank including Gretna, Harvey, and Marrero."},
+    {"question": "Are estimates free?", "answer": "We provide free estimates for most standard services. Diagnostic fees may apply for complex troubleshooting, but these are credited toward the cost of repair."},
+    {"question": "Are you licensed and insured?", "answer": "Yes, ACE Home Services is fully licensed, bonded, and insured in the state of Louisiana. All of our technicians are certified in their respective trades."},
+    {"question": "How soon can a technician come out?", "answer": "For non-emergency calls during business hours, we can usually get a technician out same-day or next-day. Emergency calls are dispatched immediately."},
+    {"question": "What is your cancellation policy?", "answer": "We ask for at least 2 hours notice for cancellations. There is no fee for cancellations made with adequate notice."},
+    {"question": "What should I expect when the technician arrives?", "answer": "Our technician will arrive in a marked ACE Home Services vehicle, wearing a company uniform with a photo ID badge. They will walk you through the issue and provide an upfront estimate before beginning any work."},
+    {"question": "Do you offer any membership or maintenance plans?", "answer": "Yes! We offer our Comfort Club membership with three tiers: Single Trade, Complete Home, and Premium. Members enjoy priority scheduling, discounted dispatch fees, annual tune-ups, and savings on repairs."},
+    {"question": "Is there a fee for a technician to come out?", "answer": "Our standard dispatch fee is $89 during business hours and $149 for after-hours and weekend calls. This fee is credited toward the cost of the repair."},
+    {"question": "What are your business hours?", "answer": "Our office is open Monday through Friday, 7 AM to 5 PM. For after-hours emergencies, our on-call technicians are available 24/7."},
+    {"question": "Do you service all brands?", "answer": "Yes, our technicians are trained to service all major brands including Trane, Carrier, Lennox, Rheem, Goodman, and many more."},
+    {"question": "What areas of New Orleans do you cover?", "answer": "We cover the entire Greater New Orleans area including Orleans Parish, Jefferson Parish, St. Tammany Parish, and parts of St. Bernard and Plaquemines Parishes."},
+    {"question": "Do you offer financing?", "answer": "Yes, we offer flexible financing options for equipment replacements and larger projects. Ask about our 0% interest plans for qualified customers."}
+  ],
+  "memberships": [
+    {"name": "Comfort Club - Single Trade", "description": "One annual tune-up for a single system. 10% off repairs for the enrolled trade."},
+    {"name": "Comfort Club - Complete Home", "description": "Annual tune-ups for HVAC, plumbing, and electrical systems. 15% off all repairs. Priority scheduling."},
+    {"name": "Comfort Club - Premium", "description": "All Complete Home benefits plus waived dispatch fees, priority emergency scheduling, and 20% off all repairs."}
+  ],
+  "global_questions": []
 }
