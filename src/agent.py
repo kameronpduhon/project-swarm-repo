@@ -15,6 +15,9 @@ from livekit.agents import (
     get_job_context,
     room_io,
 )
+from livekit.agents.llm import RealtimeModel
+from livekit.agents.voice.events import SpeechCreatedEvent
+from livekit.agents.voice.speech_handle import SpeechHandle
 from livekit.plugins import google, noise_cancellation
 
 from call_results import log_call_results
@@ -96,17 +99,15 @@ class VoiceAgent(Agent):
         urgency: VALID_URGENCY,
         collected_fields: dict,
     ):
-        """End the call and log the results. Call this IMMEDIATELY after your
-        closing statement. Do not say anything else after calling this tool.
+        """End the call and log structured results.
 
         Args:
-            caller_name: The caller's name ("unknown" if not collected).
-            caller_phone: The caller's phone number ("unknown" if not collected).
-            intent: The caller's primary intent.
-            summary: Brief summary of the ENTIRE conversation including all topics.
-            urgency: The urgency level of the call.
-            collected_fields: All information collected. Include keys like service,
-                sub_service, service_address, issue_description, is_homeowner, etc.
+            caller_name: Caller's name or "unknown".
+            caller_phone: Caller's phone number or "unknown".
+            intent: Primary intent of the call.
+            summary: Brief summary of the entire conversation.
+            urgency: Urgency level.
+            collected_fields: Dict of all collected info (service, sub_service, service_address, issue_description, etc.).
         """
         intent, urgency, collected_fields = normalize_end_call_payload(
             intent, urgency, collected_fields
@@ -123,14 +124,29 @@ class VoiceAgent(Agent):
 
         log_call_results(results)
 
-        # --- Shutdown sequence ---
-        # Gemini already spoke the closing via prompt instructions before calling
-        # this tool. We wait for that speech to finish, then tear down.
-        # NOTE: session.say() does NOT work with Gemini native audio (no TTS).
+        # --- Shutdown sequence (matches SDK EndCallTool pattern) ---
+        # Gemini Realtime auto-generates a tool reply speech after tool execution.
+        # We must wait for THAT speech to finish playing, then shut down.
+
+        llm = context.session.current_agent._get_activity_or_raise().llm
+
+        def _on_speech_done(_: SpeechHandle) -> None:
+            if (
+                not isinstance(llm, RealtimeModel)
+                or not llm.capabilities.auto_tool_reply_generation
+            ):
+                # Non-realtime: shutdown directly after current speech
+                context.session.shutdown()
+            else:
+                # Gemini Realtime: wait for auto-generated tool reply speech
+                self._shutdown_task = asyncio.create_task(
+                    self._delayed_session_shutdown(context)
+                )
+
+        context.speech_handle.add_done_callback(_on_speech_done)
 
         @context.session.once("close")
         def _on_session_close(ev):
-            # Cancel pending shutdown task if session closes first (e.g. caller hangs up)
             if self._shutdown_task and not self._shutdown_task.done():
                 self._shutdown_task.cancel()
 
@@ -143,20 +159,26 @@ class VoiceAgent(Agent):
             job_ctx.add_shutdown_callback(_delete_room)
             job_ctx.shutdown(reason="end_call")
 
-        async def _shutdown_after_playout():
-            try:
-                await context.wait_for_playout()
-                logger.info("Playout complete, shutting down session")
-            except Exception:
-                logger.warning(
-                    "Playout wait failed, shutting down session anyway", exc_info=True
-                )
-            finally:
-                context.session.shutdown()
+        return "Thank the caller warmly and say a brief goodbye. Say nothing else after."
 
-        self._shutdown_task = asyncio.create_task(_shutdown_after_playout())
+    async def _delayed_session_shutdown(self, context: RunContext) -> None:
+        """Wait for Gemini's auto-generated tool reply speech to finish, then shutdown."""
+        speech_created_fut: asyncio.Future[SpeechHandle] = asyncio.Future()
 
-        return "Call ended. Do not say anything else."
+        @context.session.once("speech_created")
+        def _on_speech_created(ev: SpeechCreatedEvent) -> None:
+            if not speech_created_fut.done():
+                speech_created_fut.set_result(ev.speech_handle)
+
+        try:
+            speech_handle = await asyncio.wait_for(speech_created_fut, timeout=5.0)
+            await speech_handle
+            logger.info("Tool reply speech finished, shutting down session")
+        except asyncio.TimeoutError:
+            logger.warning("Tool reply speech timed out, shutting down session anyway")
+        finally:
+            context.session.off("speech_created", _on_speech_created)
+            context.session.shutdown()
 
 
 server = AgentServer()
