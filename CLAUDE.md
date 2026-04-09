@@ -5,7 +5,7 @@ AI voice agent for home service companies. Answers inbound calls via Twilio SIP 
 ## Stack
 
 - **Python 3.12**, managed with `uv`
-- **LiveKit Agents SDK** (v1.4+) — real-time voice infrastructure
+- **LiveKit Agents SDK** (v1.5+) — real-time voice infrastructure
 - **Gemini 3.1 Flash Live Preview** — native audio model (no separate TTS/STT)
 - **Twilio SIP** — telephony ingress
 - **Linter/formatter:** `ruff`
@@ -70,14 +70,17 @@ uv run ruff format src/ tests/
 4. **Native audio** — Gemini Realtime handles speech directly (no TTS/STT pipeline). Don't add separate TTS/STT.
 5. **One question per turn** — strict prompt rule to prevent LLM chattiness.
 6. **PII redaction** — info-level logs never contain caller name, phone, collected fields, or summary.
-7. **Graceful shutdown** — waits for audio playout to finish before closing session and deleting room.
+7. **Graceful shutdown** — follows the SDK `EndCallTool` pattern: `end_call` fires first (logs data, returns goodbye instruction), Gemini speaks goodbye as tool reply, `_delayed_session_shutdown` waits for that speech to finish, then closes session and deletes room.
+8. **Tool-first call ending** — agent calls `end_call` BEFORE saying goodbye (not after). The tool return value instructs Gemini to generate the goodbye as the tool reply speech. This is required because Gemini Realtime won't invoke a function tool after speaking.
 
 ## What NOT to Change
 
 - **Don't swap `playbook.py` to fetch from the real API** until the project-d endpoint is confirmed ready. Currently uses `sample_playbook.json`.
 - **Don't swap `call_results.py` to POST results** to project-d until that endpoint is confirmed ready. Currently logs to stdout.
 - **Don't add TTS/STT plugins** — Gemini Realtime handles audio natively.
-- **Don't change the Gemini model** without testing — `gemini-2.0-flash-live-preview-04-09` is specifically chosen for realtime audio support.
+- **Don't change the Gemini model** without testing — `gemini-3.1-flash-live-preview` is specifically chosen for realtime audio support.
+- **Don't change the end_call flow** — the tool-first pattern (call tool, then Gemini speaks goodbye as tool reply) is required for Gemini Realtime. Telling the agent to say goodbye THEN call the tool will not work — Gemini won't invoke tools after speaking.
+- **Don't put behavioral instructions in tool docstrings** — Gemini Realtime may speak docstring text aloud. Keep tool descriptions minimal/mechanical; put behavioral rules in the system prompt only.
 - **Don't change noise cancellation settings** — BVCTelephony for SIP calls, BVC for others. These are tuned.
 
 ## Playbook Structure
