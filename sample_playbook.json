@@ -1,6 +1,6 @@
 {
   "playbook": {
-    "id": "01JEXAMPLE00000000000ACE01",
+    "id": "01kns5wwy8veefrqj4nhgbzk3q",
     "name": "ACE Home Services",
     "timezone": "America/Chicago",
     "greeting_script": "Thank you for calling ACE Home Services, the Greater New Orleans area's trusted home service experts. How can I help you today?",
@@ -27,12 +27,12 @@
     }
   },
   "current_time_window": {
-    "id": "01JEXAMPLE00000000000TW001",
+    "id": "01kns5wwy9g6zber1khj72171t",
     "name": "Business Hours"
   },
   "service_configs": [
     {
-      "id": "01JEXAMPLE00000000000SC001",
+      "id": "01kns5wx1mjyphkb57ctkbmqt0",
       "label": null,
       "service": "HVAC",
       "sub_services": [
@@ -72,14 +72,14 @@
       "zone_group_name": "New Orleans Metro",
       "fee": {
         "label": "Standard Dispatch Fee",
-        "amount": 89.0,
+        "amount": 89,
         "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
         "credited_toward_work": true
       },
       "membership_fees": [
-        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
-        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
-        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 49, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 0, "waive_fee": true},
+        {"membership": "Comfort Club - Premium", "fee_amount": 0, "waive_fee": true}
       ],
       "probing_questions": [
         "When did you first notice the issue?",
@@ -97,7 +97,7 @@
       "oncall_schedule": null
     },
     {
-      "id": "01JEXAMPLE00000000000SC002",
+      "id": "01kns5wx2r6b4fh7c6483y78s5",
       "label": null,
       "service": "Electrical",
       "sub_services": [
@@ -137,14 +137,14 @@
       "zone_group_name": "New Orleans Metro",
       "fee": {
         "label": "Standard Dispatch Fee",
-        "amount": 89.0,
+        "amount": 89,
         "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
         "credited_toward_work": true
       },
       "membership_fees": [
-        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
-        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
-        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 49, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 0, "waive_fee": true},
+        {"membership": "Comfort Club - Premium", "fee_amount": 0, "waive_fee": true}
       ],
       "probing_questions": [
         "When did you first notice the issue?",
@@ -162,7 +162,7 @@
       "oncall_schedule": null
     },
     {
-      "id": "01JEXAMPLE00000000000SC003",
+      "id": "01kns5wx3qx54gfkpzmv3btf1q",
       "label": null,
       "service": "Plumbing",
       "sub_services": [
@@ -202,14 +202,14 @@
       "zone_group_name": "New Orleans Metro",
       "fee": {
         "label": "Standard Dispatch Fee",
-        "amount": 89.0,
+        "amount": 89,
         "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
         "credited_toward_work": true
       },
       "membership_fees": [
-        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
-        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
-        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 49, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 0, "waive_fee": true},
+        {"membership": "Comfort Club - Premium", "fee_amount": 0, "waive_fee": true}
       ],
       "probing_questions": [
         "When did you first notice the issue?",
@@ -226,7 +226,7 @@
       "oncall_schedule": null
     },
     {
-      "id": "01JEXAMPLE00000000000SC004",
+      "id": "01kns5wx4nm28fbaa3xcmachaw",
       "label": null,
       "service": "Drains",
       "sub_services": [
@@ -264,14 +264,14 @@
       "zone_group_name": "New Orleans Metro",
       "fee": {
         "label": "Standard Dispatch Fee",
-        "amount": 89.0,
+        "amount": 89,
         "description": "Standard dispatch fee during business hours, credited toward the cost of repair.",
         "credited_toward_work": true
       },
       "membership_fees": [
-        {"membership": "Comfort Club - Single Trade", "fee_amount": 69.0, "waive_fee": false},
-        {"membership": "Comfort Club - Complete Home", "fee_amount": 49.0, "waive_fee": false},
-        {"membership": "Comfort Club - Premium", "fee_amount": null, "waive_fee": true}
+        {"membership": "Comfort Club - Single Trade", "fee_amount": 49, "waive_fee": false},
+        {"membership": "Comfort Club - Complete Home", "fee_amount": 0, "waive_fee": true},
+        {"membership": "Comfort Club - Premium", "fee_amount": 0, "waive_fee": true}
       ],
       "probing_questions": [
         "When did you first notice the issue?",
