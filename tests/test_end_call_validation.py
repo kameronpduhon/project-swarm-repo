@@ -39,8 +39,8 @@ def test_none_collected_fields_becomes_empty():
 
 def test_all_valid_intents_accepted():
     """Every valid intent value should pass through unchanged."""
-    for value in ("schedule_service", "request_quote", "general_inquiry",
-                  "faq", "message", "emergency"):
+    for value in ("schedule_service", "request_quote", "cancel_reschedule",
+                  "general_inquiry", "faq", "message", "emergency"):
         intent, _, _ = normalize_end_call_payload(value, "normal", {})
         assert intent == value
 
