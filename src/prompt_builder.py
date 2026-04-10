@@ -242,19 +242,28 @@ def _build_property_instructions(intake: dict) -> str:
 
 
 def _build_services_section(service_configs: list) -> str:
-    """Build SERVICES OFFERED section from service configs."""
+    """Build SERVICES OFFERED section from service configs with customer type restrictions."""
     if not service_configs:
         return "SERVICES OFFERED:\n  No services configured for this time window."
 
     lines = ["SERVICES OFFERED:"]
     for config in service_configs:
         service = config["service"]
+        customer_type = config.get("customer_type", "both")
         subs = config.get("sub_services", [])
+
+        # Add customer type restriction if not "both"
+        restriction = ""
+        if customer_type == "residential":
+            restriction = " (residential only)"
+        elif customer_type == "commercial":
+            restriction = " (commercial only)"
+
         if subs:
             sub_list = ", ".join(subs)
-            lines.append(f"  {service}: {sub_list}")
+            lines.append(f"  {service}{restriction}: {sub_list}")
         else:
-            lines.append(f"  {service}")
+            lines.append(f"  {service}{restriction}")
     return "\n".join(lines)
 
 
@@ -311,11 +320,13 @@ def _build_non_service_areas_section(non_service_areas: list) -> str:
     for area in non_service_areas:
         area_type = area.get("type", "location")
         value = area["value"]
+        state = area.get("state", "")
         script = area.get("response_script", "")
+        label = f"{value}, {state}" if state else value
         if script:
-            lines.append(f'  - {value} ({area_type}): "{script}"')
+            lines.append(f'  - {label} ({area_type}): "{script}"')
         else:
-            lines.append(f"  - {value} ({area_type}): Outside service area.")
+            lines.append(f"  - {label} ({area_type}): Outside service area.")
     return "\n".join(lines)
 
 
