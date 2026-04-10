@@ -36,11 +36,28 @@ Inbound call → Twilio SIP → LiveKit room → entrypoint(ctx)
 ### Key Types
 
 ```python
-VALID_INTENTS = "schedule_service" | "request_quote" | "general_inquiry" | "faq" | "message" | "emergency"
+VALID_INTENTS = "schedule_service" | "request_quote" | "cancel_reschedule" | "general_inquiry" | "faq" | "message" | "emergency"
 VALID_URGENCY = "normal" | "urgent" | "emergency"
 ```
 
 `normalize_end_call_payload()` defaults invalid values to `"general_inquiry"` / `"normal"` / `{}`.
+
+### Call Flows
+
+The prompt has distinct flows for different call types, each with its own collection steps:
+
+| Flow | Steps | Intent |
+|------|-------|--------|
+| **Service Request** | Greeting → caller identity → determine service/job_type → issue + probing questions → scheduling preference → address + property details → fee disclosure → end_call | `schedule_service` |
+| **Quote/Estimate** | Caller identity → identify service → city/zip check → preferred callback time → end_call | `request_quote` |
+| **Cancel/Reschedule** | Caller identity → appointment details → cancel vs reschedule + new time → end_call | `cancel_reschedule` |
+| **FAQ** | Answer from FAQ list → end_call | `faq` |
+| **Message** | Caller identity + message → end_call | `message` |
+| **Missed Call Return** | Caller identity → what call was about → end_call | `message` |
+
+### Tool Reply Closing
+
+The `end_call` tool return value is **intent-aware** — it generates different closing messages based on the intent so the caller hears the right expectation statement. The agent must NOT speak a closing or goodbye before calling end_call — the tool reply is the only speech after the tool fires. Speaking before the tool causes double-speak or Gemini skipping the tool entirely.
 
 ## Commands
 
@@ -79,9 +96,24 @@ uv run ruff format src/ tests/
 - **Don't swap `call_results.py` to POST results** to project-d until that endpoint is confirmed ready. Currently logs to stdout.
 - **Don't add TTS/STT plugins** — Gemini Realtime handles audio natively.
 - **Don't change the Gemini model** without testing — `gemini-3.1-flash-live-preview` is specifically chosen for realtime audio support.
-- **Don't change the end_call flow** — the tool-first pattern (call tool, then Gemini speaks goodbye as tool reply) is required for Gemini Realtime. Telling the agent to say goodbye THEN call the tool will not work — Gemini won't invoke tools after speaking.
+- **Don't change the end_call flow** — the tool-first pattern (call tool, then Gemini speaks goodbye as tool reply) is required for Gemini Realtime. Telling the agent to say goodbye THEN call the tool will not work — Gemini won't invoke tools after speaking. This was confirmed across multiple test sessions.
+- **Don't add pre-tool speech to any call flow** — Every flow must end with "call end_call immediately, do NOT say goodbye/closing yourself." If the agent speaks before the tool, it causes double-speak or Gemini skipping the tool entirely.
 - **Don't put behavioral instructions in tool docstrings** — Gemini Realtime may speak docstring text aloud. Keep tool descriptions minimal/mechanical; put behavioral rules in the system prompt only.
 - **Don't change noise cancellation settings** — BVCTelephony for SIP calls, BVC for others. These are tuned.
+
+## Collected Fields
+
+For service calls, `collected_fields` should include:
+- **Required:** `service`, `sub_service`, `job_type` (repair/installation/maintenance), `service_address`, `issue_description`
+- **Conditional:** `is_residential`, `is_homeowner`, `business_name`, `caller_email`, `unit_apartment`, `responsible_for_billing` (based on playbook intake toggles)
+- **Optional:** `preferred_timeframe`
+
+For quotes: `service`, `sub_service`, `job_type`, `preferred_timeframe`
+For cancel/reschedule: `appointment_for`, `original_appointment_info`, `cancel_or_reschedule`, `preferred_timeframe`
+
+## Fee Disclosure Rules
+
+Fees from the playbook CAN be quoted to callers, but only when they are scheduling a service that involves that fee. The agent must never make up fees, and must never quote prices for repairs, sales, or estimates. If a caller declines a fee, acknowledge politely. If they ask for a discount, mention membership plans. The fee section includes per-service membership overrides (reduced or waived fees).
 
 ## Playbook Structure
 
