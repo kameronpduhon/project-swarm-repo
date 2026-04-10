@@ -159,7 +159,7 @@ class VoiceAgent(Agent):
             job_ctx.add_shutdown_callback(_delete_room)
             job_ctx.shutdown(reason="end_call")
 
-        return "Thank the caller warmly and say a brief goodbye. Say nothing else after."
+        return "Set expectations for what happens next (e.g. 'We'll get a technician scheduled and someone from the team will reach out to confirm'), then thank the caller warmly and say a brief goodbye. Say nothing else after."
 
     async def _delayed_session_shutdown(self, context: RunContext) -> None:
         """Wait for Gemini's auto-generated tool reply speech to finish, then shutdown."""

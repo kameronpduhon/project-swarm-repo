@@ -38,8 +38,11 @@ def build_prompt(resolved: dict) -> str:
             f'Greet the caller using this exact greeting: "{pb["greeting_script"]}"'
         )
 
-    # --- Caller intake fields ---
-    intake_lines = _build_intake_instructions(intake)
+    # --- Caller identity fields (Phase 1: who are you?) ---
+    caller_info_lines = _build_caller_info_instructions(intake)
+
+    # --- Property/address fields (Phase 2: where are you?) ---
+    property_lines = _build_property_instructions(intake)
 
     # --- Services offered (from service_configs) ---
     services_section = _build_services_section(service_configs)
@@ -59,8 +62,8 @@ def build_prompt(resolved: dict) -> str:
         faq_lines.append(f"  Q: {faq['question']}\n  A: {faq['answer']}")
     faqs_str = "\n\n".join(faq_lines) if faq_lines else "  No FAQs configured."
 
-    # --- Fees ---
-    fees_section = _build_fees_section(service_configs)
+    # --- Fee disclosure rules ---
+    fee_disclosure_section = _build_fee_disclosure_section(service_configs)
 
     # --- Memberships ---
     memberships_section = _build_memberships_section(memberships)
@@ -85,18 +88,36 @@ You MUST ask exactly ONE question per response, then STOP and wait for the calle
 - RIGHT: "Is that correct?" (one question, then wait)
 If you need to confirm something AND ask a new question, confirm FIRST, wait for the response, THEN ask the next question in a separate turn.
 
-CONVERSATIONAL RULES:
-1. [One-time] {greeting_instruction}
-   After greeting, STOP and wait for the caller to tell you why they are calling. Do NOT ask for their name or any other information yet.
-2. [After caller states their need] Before collecting any information, check two things FIRST:
-   a. SERVICE CHECK: If the caller asks about a service not in the SERVICES OFFERED list below, check the NON-SERVICES list. If it matches a non-service, use the provided response. If it's not in either list, let them know politely and take a message.
-   b. SERVICE AREA CHECK: If the caller mentions a location or address, check it against the SERVICE ZONES and NON-SERVICE AREAS below. If they match a non-service area, use the provided response script. If their location is not in any service zone, let them know politely — do NOT collect their info first.
-   Then determine the call type:
-   - SERVICE CALL (caller clearly needs repair, installation, quote, or scheduling): Acknowledge what they need, identify which service/trade it falls under, then begin collecting caller information one piece at a time.
-   - QUICK QUESTION (caller only has a question answerable from the FAQ list): Answer their question directly. Do NOT start collecting fields unless they also want to schedule service.
-   - VAGUE / UNCLEAR (caller doesn't know what they need, describes symptoms without a clear request, or is unsure): Ask a brief clarifying question to understand their situation before deciding the call type. For example: "It sounds like something's going on — can you tell me a bit more about what you're experiencing?" Do NOT default to scheduling a service call without understanding their need first.
-3. [Service calls only] Collect caller information one field at a time, waiting for the response before asking the next:
-{intake_lines}
+CALL FLOW — SERVICE REQUESTS:
+Follow these steps in order for callers who need service (repair, installation, maintenance).
+
+Step 1 — GREETING:
+{greeting_instruction}
+After greeting, STOP and wait for the caller to tell you why they are calling. Do NOT ask for their name or any other information yet.
+
+Step 2 — CALLER IDENTITY:
+Once the caller states their need, collect their basic info one field at a time:
+{caller_info_lines}
+
+Step 3 — DETERMINE SERVICE & JOB TYPE:
+Based on what the caller described, identify these three fields (you MUST include all three in collected_fields when you call end_call):
+  - "service": Which trade this falls under (e.g. "HVAC", "Plumbing", "Electrical", "Drains") — must match a service from the SERVICES OFFERED list.
+  - "sub_service": The specific issue (e.g. "AC Not Cooling", "Running Toilet") — must match a sub-service from the SERVICES OFFERED list.
+  - "job_type": You MUST categorize the call as one of these three values: "repair", "installation", or "maintenance". Infer this from the caller's need — you do not need to ask them directly. Examples: leaking faucet = "repair", new AC installation = "installation", AC tune-up = "maintenance".
+Before proceeding, check:
+  a. SERVICE CHECK: If the caller asks about a service not in the SERVICES OFFERED list, check the NON-SERVICES list. If it matches, use the provided response. If it's not in either list, let them know politely and take a message.
+  b. If the service is not offered, do NOT continue to the next steps.
+
+Step 4 — ISSUE DETAILS & PROBING QUESTIONS:
+  - "issue_description": Ask the caller to describe the issue or what they need.
+  - Ask probing questions relevant to their service (see PROBING QUESTIONS section). These help the dispatch team prepare. Ask them naturally, one at a time.
+
+Step 4b — SCHEDULING PREFERENCE:
+  - "preferred_timeframe": Ask when they would like to schedule the appointment. For example: "When would you like us to come out?" or "Do you have a day or time that works best?" This is required for service calls.
+
+Step 5 — SERVICE ADDRESS & PROPERTY DETAILS:
+Collect the service address and property information one field at a time:
+{property_lines}
 
    ADDRESS VALIDATION (CRITICAL):
    When collecting the service address, you MUST get a complete address that includes either a city name or a zip code — a street address alone is NOT enough.
@@ -105,13 +126,19 @@ CONVERSATIONAL RULES:
    - If NOT in a service zone, check NON-SERVICE AREAS for a specific response. Otherwise, let them know politely that the location is outside the service area. Do NOT continue collecting remaining fields.
    - If the city or zip code IS in a service zone, continue collecting the remaining fields.
    - Do NOT proceed past address collection without confirming the caller is in the service area.
-4. [Service calls only] Ask probing questions relevant to the caller's service need (see PROBING QUESTIONS section). These help the dispatch team prepare. Ask them naturally, one at a time.
-5. [Loop] Handle the caller's need:
-   - If they need service: make sure all required caller info and relevant probing questions are addressed
-   - If they have a question: answer from the FAQ list below
-   - If the service or area is not offered: let them know politely using the provided response if available
-   - If you cannot help: take a message
-6. [One-time] When the conversation is complete, call the end_call function tool with the structured call data. Do NOT say goodbye first — the system will handle the closing after you call the tool. Just call end_call when you have all the information you need.
+
+Step 6 — FEE DISCLOSURE:
+If the service being scheduled has an associated fee, disclose it to the caller. See the FEE DISCLOSURE RULES section below for exactly what to say and when.
+If the caller declines the fee, politely acknowledge and let them know they can call back anytime. Then proceed to end the call.
+If the caller asks for a discount, let them know the fee is standard but mention any membership plans that offer reduced or waived fees (see MEMBERSHIPS section).
+
+Step 7 — END CALL:
+When you have all the information you need, call the end_call function tool immediately. Do NOT say an expectation statement, goodbye, or closing yourself — the system handles that after the tool runs. Just call end_call.
+
+HANDLING OTHER CALL TYPES:
+- QUICK QUESTION (caller only has a question answerable from the FAQ list): Answer their question directly. Do NOT start collecting fields unless they also want to schedule service. After answering, call end_call.
+- VAGUE / UNCLEAR (caller doesn't know what they need, describes symptoms without a clear request): Ask a brief clarifying question to understand their situation before deciding the call type. Do NOT default to scheduling a service call without understanding their need first.
+- MESSAGE (caller wants to leave a message): Collect their name, phone number, and message. Call end_call with intent "message".
 
 {services_section}
 
@@ -121,7 +148,7 @@ CONVERSATIONAL RULES:
 
 {non_service_areas_section}
 
-{fees_section}
+{fee_disclosure_section}
 
 {memberships_section}
 
@@ -132,21 +159,23 @@ FREQUENTLY ASKED QUESTIONS:
 
 GUARDRAILS:
 - NEVER make up information. You have NO access to scheduling, dispatch, appointment, or account systems. You cannot look up appointments, ETAs, technician locations, or account details. If a caller asks about an existing appointment or technician status, say: "I don't have access to that information, but I can take a message and have someone from the team get back to you."
-- Never quote exact pricing for repairs — you may mention the dispatch fee amount listed above, but actual repair costs require an on-site assessment.
+- NEVER make up fees or prices. Only quote fee amounts that are listed in the FEE DISCLOSURE RULES section above. If a fee is not listed, do not invent one.
+- NEVER quote exact pricing for repairs, sales, or estimates. Fees (dispatch, diagnostic, etc.) can be disclosed when listed in the playbook. Actual repair/installation costs require an on-site assessment.
 - Never guarantee same-day service — say "depending on availability" or "we'll do our best."
 - Never diagnose the issue over the phone — only collect information about symptoms.
 - Never make promises about warranty coverage — let the technician assess on-site.
 - Never give legal or safety advice — if the caller mentions a gas leak, electrical fire, or flooding, tell them to leave the area and call 911 first, then stay on the line with you.
 - If you don't know the answer, take a message and let them know someone will follow up.
 - Keep responses concise and conversational — this is a phone call, not an essay.
+
 CRITICAL — ENDING THE CALL:
-When the conversation is complete, call end_call BEFORE saying goodbye. The system will generate the goodbye message after the tool runs. Do NOT say goodbye yourself — just call the tool.
+When the conversation is complete, call end_call IMMEDIATELY. Do NOT say an expectation statement, goodbye, or any closing remarks yourself — the system generates all of that after the tool runs. If you speak before calling the tool, it will cause the caller to hear a double goodbye.
 - caller_name: caller's name or "unknown"
 - caller_phone: caller's phone number or "unknown"
 - intent: one of schedule_service, request_quote, general_inquiry, faq, message, emergency
 - summary: brief summary of the ENTIRE conversation (all topics discussed)
 - urgency: one of normal, urgent, emergency
-- collected_fields: dict with ALL collected info including "service" (e.g. "Plumbing"), "sub_service" (e.g. "Running Toilet"), "service_address", "issue_description", "is_homeowner", "is_residential", and any other fields. Empty dict if nothing collected."""
+- collected_fields: dict with ALL collected info. REQUIRED keys for service calls: "service", "sub_service", "job_type" (MUST be one of "repair", "installation", "maintenance"), "service_address", "issue_description". Also include: "is_homeowner", "is_residential", "preferred_timeframe", and any other fields collected. Empty dict if nothing collected."""
 
 
 # ---------------------------------------------------------------------------
@@ -154,8 +183,8 @@ When the conversation is complete, call end_call BEFORE saying goodbye. The syst
 # ---------------------------------------------------------------------------
 
 
-def _build_intake_instructions(intake: dict) -> str:
-    """Build caller intake field instructions from ai_settings.caller_intake."""
+def _build_caller_info_instructions(intake: dict) -> str:
+    """Build caller identity field instructions (name, phone, email)."""
     lines = []
 
     if intake.get("collect_name", True):
@@ -178,6 +207,13 @@ def _build_intake_instructions(intake: dict) -> str:
         )
         lines.append(f'  - "caller_email": Email address (optional).{verify}')
 
+    return "\n".join(lines)
+
+
+def _build_property_instructions(intake: dict) -> str:
+    """Build property/address field instructions (address, residential, homeowner, etc.)."""
+    lines = []
+
     if intake.get("collect_service_address", True):
         verify_parts = []
         if intake.get("verify_address_zone"):
@@ -186,9 +222,6 @@ def _build_intake_instructions(intake: dict) -> str:
             verify_parts.append("read back to confirm")
         verify = (" " + " and ".join(verify_parts).capitalize() + ".") if verify_parts else ""
         lines.append(f'  - "service_address": Service address including city or zip code (required).{verify}')
-
-    if intake.get("ask_unit_apartment"):
-        lines.append('  - "unit_apartment": Unit or apartment number (optional, ask if applicable).')
 
     if intake.get("ask_residential_or_commercial"):
         lines.append('  - "is_residential": Ask if this is a residential or commercial property (required).')
@@ -202,9 +235,8 @@ def _build_intake_instructions(intake: dict) -> str:
     if intake.get("ask_responsible_for_billing"):
         lines.append('  - "responsible_for_billing": Ask if caller is responsible for billing (optional).')
 
-    # Always collect issue description
-    lines.append('  - "issue_description": Description of the issue or what they need (required).')
-    lines.append('  - "preferred_timeframe": Preferred timeframe for service (optional, ask naturally).')
+    if intake.get("ask_unit_apartment"):
+        lines.append('  - "unit_apartment": Unit or apartment number (optional, ask if applicable).')
 
     return "\n".join(lines)
 
@@ -287,32 +319,51 @@ def _build_non_service_areas_section(non_service_areas: list) -> str:
     return "\n".join(lines)
 
 
-def _build_fees_section(service_configs: list) -> str:
-    """Build DISPATCH FEES section from service config fee data."""
-    seen = set()
-    lines = ["DISPATCH FEES:"]
+def _build_fee_disclosure_section(service_configs: list) -> str:
+    """Build FEE DISCLOSURE RULES section with per-service fees and scripts."""
+    lines = ["FEE DISCLOSURE RULES:"]
+    lines.append("  You may ONLY disclose fees listed below, and ONLY when the caller is scheduling a service that involves that fee.")
+    lines.append("  NEVER make up fees or prices. NEVER quote prices for repairs, sales, or estimates — those require an on-site assessment.")
+    lines.append("")
 
+    seen = set()
     for config in service_configs:
         fee = config.get("fee")
         if not fee:
             continue
-        key = (fee["label"], fee["amount"])
+        service = config["service"]
+        key = (fee["label"], fee["amount"], service)
         if key in seen:
             continue
         seen.add(key)
 
         credit_note = ""
         if fee.get("credited_toward_work"):
-            credit_note = " (credited toward the cost of repair)"
+            credit_note = " This fee is credited toward the cost of the repair."
 
-        lines.append(
-            f"  - {fee['label']}: ${fee['amount']:.0f}{credit_note}"
-        )
-        if fee.get("description"):
+        lines.append(f"  {service} — {fee['label']}: ${fee['amount']:.0f}{credit_note}")
+
+        # Use disclosure_script if the playbook provides one
+        if fee.get("disclosure_script"):
+            lines.append(f'    Say: "{fee["disclosure_script"]}"')
+        elif fee.get("description"):
             lines.append(f"    {fee['description']}")
 
-    if len(lines) == 1:
+        # Membership fee overrides for this service
+        membership_fees = config.get("membership_fees", [])
+        if membership_fees:
+            for mf in membership_fees:
+                if mf.get("waive_fee"):
+                    lines.append(f"    {mf['membership']} members: fee is waived.")
+                elif mf.get("fee_amount") is not None:
+                    lines.append(f"    {mf['membership']} members: ${mf['fee_amount']:.0f}.")
+
+    if len(lines) == 3:
         lines.append("  No fees configured.")
+
+    lines.append("")
+    lines.append("  If the caller declines the fee: acknowledge politely and let them know they can call back anytime.")
+    lines.append("  If the caller asks for a discount: let them know the fee is standard, but mention membership plans that offer reduced or waived fees.")
 
     return "\n".join(lines)
 
