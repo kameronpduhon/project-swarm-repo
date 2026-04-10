@@ -166,6 +166,8 @@ class VoiceAgent(Agent):
             return "Let the caller know you've taken down the details and someone from the team will call them back to confirm the change. Then say a brief goodbye. Say nothing else after."
         if intent == "request_quote":
             return "Let the caller know that someone from the team will call them back to discuss options and pricing. Then say a brief goodbye. Say nothing else after."
+        if intent in ("message", "faq", "general_inquiry"):
+            return "Let the caller know someone from the team will follow up if needed. Then say a brief goodbye. Say nothing else after."
         return "Set expectations for what happens next (e.g. 'We'll get a technician scheduled and someone from the team will reach out to confirm'), then thank the caller warmly and say a brief goodbye. Say nothing else after."
 
     async def _delayed_session_shutdown(self, context: RunContext) -> None:
