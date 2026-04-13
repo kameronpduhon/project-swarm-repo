@@ -89,6 +89,7 @@ uv run ruff format src/ tests/
 6. **PII redaction** — info-level logs never contain caller name, phone, collected fields, or summary.
 7. **Graceful shutdown** — follows the SDK `EndCallTool` pattern: `end_call` fires first (logs data, returns goodbye instruction), Gemini speaks goodbye as tool reply, `_delayed_session_shutdown` waits for that speech to finish, then closes session and deletes room.
 8. **Tool-first call ending** — agent calls `end_call` BEFORE saying goodbye (not after). The tool return value instructs Gemini to generate the goodbye as the tool reply speech. This is required because Gemini Realtime won't invoke a function tool after speaking.
+9. **Thinking + temperature tuning** — `thinking_level="low"` gives Gemini a brief reasoning step before each response, improving tool-calling reliability with long system prompts. `temperature=0.6` reduces improvisation for more consistent behavior. Thoughts are suppressed (`include_thoughts=False`) so the caller never hears them.
 
 ## What NOT to Change
 
@@ -100,6 +101,7 @@ uv run ruff format src/ tests/
 - **Don't add pre-tool speech to any call flow** — Every flow must end with "call end_call immediately, do NOT say goodbye/closing yourself." If the agent speaks before the tool, it causes double-speak or Gemini skipping the tool entirely.
 - **Don't put behavioral instructions in tool docstrings** — Gemini Realtime may speak docstring text aloud. Keep tool descriptions minimal/mechanical; put behavioral rules in the system prompt only.
 - **Don't change noise cancellation settings** — BVCTelephony for SIP calls, BVC for others. These are tuned.
+- **Don't remove thinking_config or raise temperature** without testing — `thinking_level="low"` and `temperature=0.6` were added to fix end_call tool reliability with long system prompts. Removing them may cause the tool to stop firing.
 
 ## Collected Fields
 
