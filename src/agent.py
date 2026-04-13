@@ -3,6 +3,7 @@ import logging
 from typing import Literal
 
 from dotenv import load_dotenv
+from google.genai import types
 from livekit import rtc
 from livekit.agents import (
     Agent,
@@ -206,6 +207,11 @@ async def entrypoint(ctx: JobContext):
         llm=google.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview",
             voice="Puck",
+            temperature=0.6,
+            thinking_config=types.ThinkingConfig(
+                thinking_level="low",
+                include_thoughts=False,
+            ),
         ),
     )
 
